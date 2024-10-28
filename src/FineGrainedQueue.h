@@ -13,8 +13,12 @@ void locked_cout(const std::string& str) {
 }
 
 struct Node {
-    Node(int data) : value(data), next(nullptr) {}
-    ~Node() { if (next != nullptr) delete next; }
+    //спасибо Александру Максакову, нашел решения проблемы с mutex
+    //thanks to Alexander Maksakov, found a solution to the problem with mutex
+    Node(int data) : value(data), next(nullptr), node_mutex(new std::mutex) {}
+    ~Node() {        
+        if (node_mutex != nullptr) delete node_mutex;
+    }
 
     int value;
     Node* next;
@@ -27,26 +31,31 @@ class FineGrainedQueue {
     std::mutex* queue_mutex;
 
 public:
-    FineGrainedQueue() : head(nullptr) {}
+    //спасибо Александру Максакову, нашел решения проблемы с mutex
+    //thanks to Alexander Maksakov, found a solution to the problem with mutex
+    FineGrainedQueue() : head(nullptr), queue_mutex(new std::mutex) {}
+    ~FineGrainedQueue() { 
+        if(queue_mutex) delete queue_mutex;        
+    }
 
     //Функция должна вставить узел с переданным значением value в позицию pos.
     void insertIntoMiddle(int value, int pos) {
         // создаем новый узел
         Node* node = new Node(value);
 
-       // queue_mutex->lock();
+        queue_mutex->lock();
 
         if (head == nullptr) {
             locked_cout("The list is empty, insert into position 1\n");
             head = node;
-           // queue_mutex->unlock();
+            queue_mutex->unlock();
             return;
         }
         //вставка  в начало списка
         if (pos == 0) {
             node->next = head;
             head = node;
-           // queue_mutex->unlock();
+            queue_mutex->unlock();
             return;
         }
         //переменная для подсчета позиции
@@ -60,13 +69,11 @@ public:
             currentPos++;
         }
 
-        //current->node_mutex->lock();
+        current->node_mutex->lock();
 
-        //queue_mutex->unlock();
+        queue_mutex->unlock();
 
-        if(current->next)
-        //current->next->node_mutex->lock();
-
+      
         if (currentPos < pos - 1)
             locked_cout("position not found inserted into position: " + std::to_string(currentPos) + "\n");
 
@@ -78,16 +85,14 @@ public:
         // на указатель на узел, следующий за current
         node->next = nextNode;
 
-        //current->node_mutex->unlock();
-       // node->next->node_mutex->unlock();
+        current->node_mutex->unlock();       
     }
 
     void printList() {
 
         Node* newN = head;
 
-        while (newN != nullptr)
-        {
+        while (newN != nullptr) {
             std::cout << newN->value << " ";
             newN = newN->next;
         }
@@ -114,20 +119,18 @@ public:
 
         if (cur) // проверили и только потом залочили
             cur->node_mutex->lock();
-        while (cur)
-        {
-            if (cur->value == value)
-            {
+        while (cur) {
+            if (cur->value == value) {                
                 prev->next = cur->next;
                 prev->node_mutex->unlock();
                 cur->node_mutex->unlock();
-                delete cur;
+                delete cur;                
                 return;
             }
             Node* old_prev = prev;
             prev = cur;
             cur = cur->next;
-            old_prev->node_mutex->unlock();
+           old_prev->node_mutex->unlock();
             if (cur) // проверили и только потом залочили
                 cur->node_mutex->lock();
         }
