@@ -17,7 +17,8 @@ struct Node {
     //thanks to Alexander Maksakov, found a solution to the problem with mutex
     Node(int data) : value(data), next(nullptr), node_mutex(new std::mutex) {}
     ~Node() {        
-        if (node_mutex != nullptr) delete node_mutex;
+        if (node_mutex != nullptr)
+           delete node_mutex;
     }
 
     int value;
@@ -35,7 +36,12 @@ public:
     //thanks to Alexander Maksakov, found a solution to the problem with mutex
     FineGrainedQueue() : head(nullptr), queue_mutex(new std::mutex) {}
     ~FineGrainedQueue() { 
-        if(queue_mutex) delete queue_mutex;        
+        if(queue_mutex) delete queue_mutex;   
+        while (head) {
+            Node* temp = head->next;
+            delete head;
+            head = temp;            
+        }
     }
 
     //Функция должна вставить узел с переданным значением value в позицию pos.
@@ -72,7 +78,6 @@ public:
         current->node_mutex->lock();
 
         queue_mutex->unlock();
-
       
         if (currentPos < pos - 1)
             locked_cout("position not found inserted into position: " + std::to_string(currentPos) + "\n");
@@ -89,10 +94,8 @@ public:
     }
 
     void printList() {
-
         Node* newN = head;
-
-        while (newN != nullptr) {
+        while (newN) {
             std::cout << newN->value << " ";
             newN = newN->next;
         }
@@ -132,8 +135,11 @@ public:
             cur = cur->next;
            old_prev->node_mutex->unlock();
             if (cur) // проверили и только потом залочили
-                cur->node_mutex->lock();
+                cur->node_mutex->lock();            
         }
+        //if here then it doesn't matter если здесь то нет значения
+        std::cout << "not this value: " << value << std::endl;
+                
         prev->node_mutex->unlock();
     }
 

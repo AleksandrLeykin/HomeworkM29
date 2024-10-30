@@ -34,8 +34,15 @@ int main() {
 	std::thread t4([]() { myList.remove(2); });
 
 	myList.printList();
+	std::cout << std::endl;
 
+	std::thread t5([]() { myList.remove(9); });
+	
 	t4.join();
+	t5.join();
+
+	myList.remove(11);
+	myList.printList();
 	
 	return 0;
 }
